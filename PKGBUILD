@@ -5,20 +5,37 @@
 # Maintainer: Caleb Maclennan <caleb@alerque.com>
 # Contributor: Eli Schwartz <eschwartz@archlinux.org>
 
-_pkgname=cachy
-pkgname=python-cachy
+_py="python"
+_pyver="$( \
+  "${_py}" \
+    -V | \
+    awk \
+      '{print $2}')"
+_pymajver="${_pyver%.*}"
+_pyminver="${_pymajver#*.}"
+_pynextver="${_pymajver%.*}.$(( \
+  ${_pyminver} + 1))"
+_pkg=cachy
+pkgname="${_py}-${_pkg}"
 pkgver=0.3.0
 pkgrel=10
 pkgdesc='simple yet effective caching library'
-arch=(any)
-url="https://github.com/sdispater/${_pkgname}"
-license=(MIT)
+arch=(
+  any
+)
+_http="https://github.com"
+_ns="sdipater"
+url="${_http}/${_ns}/${_pkg}"
+license=(
+  MIT
+)
 depends=(
-  python
+  "${_py}>=${_pymajver}"
+  "${_py}<${_pynextver}"
 )
 makedepends=(
-  python-{build,installer,wheel}
-  python-poetry-core
+  "${_py}-"{"build","installer","wheel"}
+  "${_py}-poetry-core"
 )
 _checkdeps=(
   flexmock
@@ -31,10 +48,11 @@ checkdepends=(
   pifpaf
   memcached
 )
-_archive="$_pkgname-$pkgver"
+_archive="${_pkg}-${pkgver}"
+_pypa="https://files.pythonhosted.org/packages/source"
 source=(
-  "https://files.pythonhosted.org/packages/source/${_pkgname:0:1}/$_pkgname/$_archive.tar.gz"
-  fix-flexmock_teardown-import.patch
+  "${_pypa}/${_pkg:0:1}/${_pkg}/${_archive}.tar.gz"
+  "fix-flexmock_teardown-import.patch"
 )
 sha256sums=(
   '186581f4ceb42a0bbe040c407da73c14092379b1e4c0e327fdb72ae4a9b269b1'
@@ -45,25 +63,40 @@ b2sums=(
 )
 
 prepare() {
-	cd "$_archive"
-	patch -Np1 -i ../fix-flexmock_teardown-import.patch
+  cd \
+    "${_archive}"
+  patch \
+    -Np1 \
+    -i \
+    "../fix-flexmock_teardown-import.patch"
 }
 
 build(){
-	cd "$_archive"
-	python -m build -wn
+  cd \
+    "${_archive}"
+  "${_py}" \
+    -m \
+      build \
+    -wn
 }
 
 check() {
-	cd "$_archive"
-	pifpaf run memcached --port 11211 -- pytest
+  cd \
+    "${_archive}"
+  pifpaf \
+    run \
+      memcached \
+      --port \
+        11211 -- \
+      pytest
 }
 
 package() {
   cd \
-    "$_archive"
-  python \
-    -m installer \
+    "${_archive}"
+  "${_py}" \
+    -m \
+      installer \
     --destdir="${pkgdir}" \
     dist/*.whl
   install \
@@ -81,5 +114,5 @@ package() {
 	  -f2)
   rm \
    -rf \
-   "$pkgdir/usr/lib/python${_py3_ver%.*}/site-packages/tests"
+   "${pkgdir}/usr/lib/python${_py3_ver%.*}/site-packages/tests"
 }
